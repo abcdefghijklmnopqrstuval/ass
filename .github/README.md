@@ -72,6 +72,7 @@ ass was designed with developers in mind. If you are a developer & want somethin
 - **Multiple file storage methods**
    - Local file system
    - Amazon S3, including [DigitalOcean Spaces]
+   - [Skynet] (free decentralized storage on the [Sia] blockchain)
 - **Multiple data storage methods** using [data engines]
    - **File**
       - JSON (default, [papito])
@@ -84,6 +85,8 @@ ass was designed with developers in mind. If you are a developer & want somethin
 [Git Submodules]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
 [ZWS]: https://zws.im
 [DigitalOcean Spaces]: https://www.digitalocean.com/products/spaces/
+[Skynet]: https://siasky.net/
+[Sia]: https://sia.tech/
 [data engines]: #data-engines
 [papito]: https://github.com/tycrek/papito
 [ass-psql]: https://github.com/tycrek/ass-psql
@@ -105,27 +108,22 @@ ass was designed with developers in mind. If you are a developer & want somethin
 
 ## Installation
 
-[Docker](#docker) is the recommended way to install ass, but you can also install it locally.
+ass supports two installation methods: Docker (recommended) & local (manual).
 
-1. You should have **Node.js 14** & **npm 7 or later** installed. 
-2. Clone this repo using `git clone https://github.com/tycrek/ass.git && cd ass/`
-3. Run `npm i` to install the required dependencies
-5. Run `npm start` to start ass.
-
-The first time you run, the setup process will automatically be called and you will be shown your first authorization token; save this as you will need it to configure ShareX.
-
-## Docker
+### Docker
 
 <details>
-<summary><em>Expand for steps to install with Docker & docker-compose</em></summary>
+<summary><em>Expand for Docker/Docker Compose installation steps</em></summary>
 <br>
 
-[docker-compose] is now the recommended way to install ass. These steps assume you are already family with Docker, so if you're not, please [read the docs]. It also assumes that you have a working Docker installation with `docker-compose` installed.
+[docker-compose] is the recommended way to install ass. These steps assume you are already family with Docker, so if you're not, please [read the docs]. It also assumes that you have a working Docker installation with `docker-compose` installed.
+
+**If your local installation of Docker Compose complains about a missing `docker-compose` file, this is your problem, not mine.** Update Compose to the latest version to remove that warning. I wrote the Compose file using the [latest Compose specification](https://github.com/compose-spec/compose-spec/blob/master/spec.md), so any issues will be caused by an outdated version of Compose.
 
 [docker-compose]: https://docs.docker.com/compose/
 [read the docs]: https://docs.docker.com/
 
-### Install using docker-compose
+#### Install using docker-compose
 
 1. Clone the ass repo using `git clone https://github.com/tycrek/ass.git && cd ass/`
 2. Run the command that corresponds to your OS:
@@ -167,7 +165,7 @@ Easy! Just pull the changes & run this one-liner:
 git pull
 
 # Rebuild the container with the new changes (uncomment the 2nd part if the update requires refreshing the config)
-docker-compose up --force-recreate --build -d && docker image prune -f # docker-compose exec ass npm run setup && docker-compose restart
+docker-compose up --force-recreate --build -d && docker image prune -f # && docker-compose exec ass npm run setup && docker-compose restart
 ```
 
 - `--force-recreate` will force the container to rebuild
@@ -185,6 +183,24 @@ docker-compose up --force-recreate --build -d && docker image prune -f # docker-
    - `auth.json`
    - `data.json`
 - I have personally tested running using these commands (migrating from an existing local deployment!) with Digital Ocean Spaces (S3 object-storage), a PostgreSQL database, & a custom frontend all on the same container. It should also work for you but feel free to let me know if you have any issues.
+
+</details>
+
+### Local
+
+<details>
+<summary><em>Expand for local installation steps</em></summary>
+<br>
+
+1. You should have **Node.js 14.17** & **npm 8 or later** installed. 
+2. Clone this repo using `git clone https://github.com/tycrek/ass.git && cd ass/`
+3. Run `npm i -g typescript` to install TypeScript globally
+4. Run `npm i --save-dev` to install the required dependencies (`--save-dev` is **required** for compilation)
+5. Run `npm run build` to compile the TypeScript files
+5. Run `npm start` to start ass.
+
+The first time you run ass, the setup process will automatically be called and you will be shown your first authorization token; save this as you will need it to configure ShareX.
+
 </details>
 
 ## Using HTTPS
@@ -194,11 +210,11 @@ For HTTPS support, you must configure a reverse proxy. I recommend Caddy but any
 [Caddy]: https://caddyserver.com/
 [my tutorial]: https://jmoore.dev/tutorials/2021/03/caddy-express-reverse-proxy/
 
-### Generating new tokens
+## Generating new tokens
 
 If you need to generate a new token at any time, run `npm run new-token <username>`. This will **automatically** load the new token so there is no need to restart ass. Username field is optional; if left blank, a random username will be created.
 
-### Cloudflare users
+## Cloudflare users
 
 In your Cloudflare DNS dashboard, set your domain/subdomain to **DNS Only** if you experience issues with **Proxied**.
 
@@ -234,6 +250,7 @@ If you need to override a specific part of the config to be different from the g
 | **`X-Ass-Domain`** | Override the domain returned for the clipboard (useful for multi-domain hosts) |
 | **`X-Ass-Access`** | Override the generator used for the resource URL. Must be one of: `original`, `zws`, `gfycat`, or `random` ([see above](#access-types)) |
 | **`X-Ass-Gfycat`** | Override the length of Gfycat ID's. Defaults to `2` |
+| **`X-Ass-Timeoffset`** | Override the timestamp offset. Defaults to `UTC+0` |
 
 ### Fancy embeds
 
@@ -261,20 +278,11 @@ You can insert certain metadata into your embeds with these placeholders:
 
 ### Webhooks
 
-You may use Discord webhooks as an easy way to keep track of your uploads. The first step is to [create a new Webhook]. You only need to follow the first section, **Making a Webhook**. Once you are done that, click **Copy Webhook URL**. Next, paste your URL into a text editor. Extract these two values from the URL:
-
-```
-https://discord.com/api/webhooks/12345678910/T0kEn0fw3Bh00K
-                                 ^^^^^^^^^^  ^^^^^^^^^^^^ 
-                                 Webhook ID  Webhook Token
-```
-
-Once you have these, add the following HTTP headers to your ShareX config:
+You may use Discord webhooks as an easy way to keep track of your uploads. The first step is to [create a new Webhook]. You only need to follow the first section, **Making a Webhook**. Once you are done that, click **Copy Webhook URL**. Finally, add these headers to your custom uploader:
 
 | Header | Purpose |
 | ------ | ------- |
-| **`X-Ass-Webhook-Client`** | The **Webhook ID** |
-| **`X-Ass-Webhook-Token`** | The **Webhook Token** |
+| **`X-Ass-Webhook-Url`** | The **Webhook URL** you copied |
 | **`X-Ass-Webhook-Username`** | (Optional) the "username" of the Webhook; can be set to whatever you want |
 | **`X-Ass-Webhook-Avatar`** | (Optional) URL to an image to use as the Webhook avatar. Use the **full** URL including `https://` |
 
@@ -289,7 +297,7 @@ By default, ass directs the index route `/` to this README. Follow these steps t
 1. Run `npm run setup` to re-run the setup script.
    - The defaults are set by your existing config, so you can press `Enter` to accept the defaults on most prompts.
    - The one setting you want to change is `Filename for your custom index`. Enter a name for your index, including `.js` (custom index's must be `.js` files).
-2. Make a new file matching the name you entered.
+2. Make a new file in the `share/` directory matching the name you entered (this directory can be found in the `ass/` directory. It is created automatically after setup is run).
 3. Your index file needs to export a single function taking three arguments: `(req, res, next)`. Some code samples for common use cases are provided below.
 4. Restart ass. The startup info logs should say **`Custom index:`**` enabled`.
 
@@ -307,6 +315,29 @@ module.exports = (req, res, next) => res.redirect('/register');
 const path = require('path');
 module.exports = (req, res, next) => res.sendFile(path.join(__dirname, 'index.html'));
 ```
+
+## File storage
+
+ass supports three methods of file storage: local, S3, or [Skynet].
+
+### Local
+
+Local storage is the simplest option, but relies on you having a lot of disk space to store files, which can be costly.
+
+### S3
+
+Any existing object storage server that's compatible with [Amazon S3] can be used with ass. I personally host my files using Digital Ocean Spaces, which implements S3.
+
+S3 servers are generally very fast and have very good uptime, though this will depend on the hosting provider and plan you choose.
+
+### Skynet
+
+[Skynet] is a decentralized CDN created by [Skynet Labs]. It utilizes the [Sia] blockchain, the leading decentralized cloud storage platform, which boasts "no signups, no servers, no trusted third parties".
+
+For hosts who are looking for a reliable, always available storage solution with lots of capacity and no costs, Skynet may be your best option. However, uploads tend to be on the slower side (though speeds will improve as the Sia network grows).
+
+[Amazon S3]: https://en.wikipedia.org/wiki/Amazon_S3
+[Skynet Labs]: https://github.com/SkynetLabs
 
 ## Custom frontends
 
@@ -328,21 +359,21 @@ ass is intended to provide a strong backend for developers to build their own fr
 
 | Name | Description | Links |
 | :--: | ----------- | :---: |
-| **JSON** | JSON-based data storage. On disk, data is stored in a JSON file. In memory, data is stored in a [Map]. This is the default engine. | [GitHub][GH ASE]<br>[NPM][NPM ASE] |
-| **PostgreSQL** | Data storage using a [PostgreSQL] database. [node-postgres] is used for communicating with the database. | [GitHub][GH APSQL]<br>[NPM][NPM APSQL] |
-| **Mongoose** | Data storage using a [MongoDB] database. [mongoose] is used for communicating with the database. Created by [@dylancl] | [GitHub][GH AMongoose]<br>[NPM][NPM AMongoose] |
+| **JSON** | JSON-based data storage. On disk, data is stored in a JSON file. In memory, data is stored in a [Map]. This is the default engine. | [GitHub][GH ASE]<br>[npm][npm ASE] |
+| **PostgreSQL** | Data storage using a [PostgreSQL] database. [node-postgres] is used for communicating with the database. | [GitHub][GH APSQL]<br>[npm][npm APSQL] |
+| **Mongoose** | Data storage using a [MongoDB] database. [mongoose] is used for communicating with the database. Created by [@dylancl] | [GitHub][GH AMongoose]<br>[npm][npm AMongoose] |
 
 [Map]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
 [GH ASE]: https://github.com/tycrek/papito/
-[NPM ASE]: https://www.npmjs.com/package/@tycrek/papito
+[npm ASE]: https://www.npmjs.com/package/@tycrek/papito
 [PostgreSQL]: https://www.postgresql.org/
 [node-postgres]: https://node-postgres.com/
 [GH APSQL]: https://github.com/tycrek/ass-psql/
-[NPM APSQL]: https://www.npmjs.com/package/@tycrek/ass-psql
+[npm APSQL]: https://www.npmjs.com/package/@tycrek/ass-psql
 [MongoDB]: https://www.mongodb.com/
 [mongoose]: https://mongoosejs.com/
 [GH AMongoose]: https://github.com/dylancl/ass-mongoose
-[NPM AMongoose]: https://www.npmjs.com/package/ass-mongoose
+[npm AMongoose]: https://www.npmjs.com/package/ass-mongoose
 [@dylancl]: https://github.com/dylancl
 
 A Papito data engine implements support for one type of database (or file, such as JSON or YAML). This lets ass server hosts pick their database of choice, because all they'll have to do is enter the connection/authentication details, and ass will handle the rest, using the resource ID as the key.
@@ -359,14 +390,16 @@ ass has a number of pre-made npm scripts for you to use. **All** of these script
 | Script | Description |
 | ------ | ----------- |
 | **`start`** | Starts the ass server. This is the default script & is run with **`npm start`**. |
+| `build` | Compiles the TypeScript files into JavaScript. |
+| `dev` | Chains the `build` and `compile` scripts together. |
 | `setup` | Starts the easy setup process. Should be run after any updates that introduce new config options. |
 | `metrics` | Runs the metrics script. This is a simple script that outputs basic resource statistics. |
 | `new-token` | Generates a new API token. Accepts one parameter for specifying a username, like `npm run new-token <username>`. ass automatically detects the new token & reloads it, so there's no need to restart the server. |
-| `restart` | Restarts the ass server using `systemctl`. More info soon (should work fine if you have an existing `ass.service` file) |
 | `engine-check` | Ensures your environment meets the minimum Node & npm version requirements. |
-| `logs` | Uses the [tlog Socket plugin] to stream logs from the ass server to your terminal, with full colour support (Remember to set [`FORCE_COLOR`] if you're using Systemd) |
 | `docker-logs` | Alias for `docker-compose logs -f --tail=50 --no-log-prefix ass` |
-| `docker-update` | Alias for `git pull && docker-compose up --force-recreate --build -d && docker image prune -f` |
+| `docker-update` | Calls `git pull` then runs the `docker-uplite` script. |
+| `docker-uplite` | Alias for `docker-compose up --force-recreate --build -d && docker image prune -f` |
+| `docker-upfull` | Alias for `npm run docker-update && npm run docker-resetup` |
 | `docker-resetup` | Alias for `docker-compose exec ass npm run setup && docker-compose restart` |
 
 [tlog Socket plugin]: https://github.com/tycrek/tlog#socket

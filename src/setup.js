@@ -15,6 +15,7 @@ const config = {
 	dataEngine: '@tycrek/papito',
 	frontendName: 'ass-x',
 	indexFile: '',
+	useSia: false,
 	s3enabled: false,
 };
 
@@ -55,7 +56,7 @@ function getConfirmSchema(description) {
 
 // If directly called on the command line, run setup script
 function doSetup() {
-	const path = (...paths) => require('path').join(__dirname, ...paths);
+	const path = (...paths) => require('path').join(process.cwd(), ...paths);
 	const TLog = require('@tycrek/log');
 	const fs = require('fs-extra');
 	const prompt = require('prompt');
@@ -66,7 +67,7 @@ function doSetup() {
 	// Override default configs with existing configs to allow migrating configs
 	// Now that's a lot of configs!
 	try {
-		const existingConfig = require('./config.json');
+		const existingConfig = require('../config.json');
 		Object.entries(existingConfig).forEach(([key, value]) => {
 			Object.prototype.hasOwnProperty.call(config, key) && (config[key] = value); // skipcq: JS-0093
 			Object.prototype.hasOwnProperty.call(s3config, key) && (s3config[key] = value); // skipcq: JS-0093
@@ -161,7 +162,7 @@ function doSetup() {
 				required: false
 			},
 			dataEngine: {
-				description: 'Data engine to use (must match an NPM package name. If unsure, leave blank)',
+				description: 'Data engine to use (must match an npm package name. If unsure, leave blank)',
 				type: 'string',
 				default: config.dataEngine,
 				required: false
@@ -176,6 +177,12 @@ function doSetup() {
 				description: 'Filename for your custom index, if using one (must be a JS file)',
 				type: 'string',
 				default: config.indexFile,
+				required: false
+			},
+			useSia: {
+				description: 'Use Sia Skynet for decentralized file storage?',
+				type: 'boolean',
+				default: config.useSia,
 				required: false
 			},
 			s3enabled: {
@@ -278,7 +285,7 @@ function doSetup() {
 
 		// Complete & exit
 		.then(() => log.blank().success('Setup complete').callback(() => process.exit(0)))
-		.catch((err) => log.blank().error(err));
+		.catch((err) => log.blank().error(err).callback(() => process.exit(1)));
 }
 
 module.exports = {
